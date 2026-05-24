@@ -4,9 +4,16 @@ from flask import Flask, request, jsonify
 from flask_caching import Cache
 from models import db, Alert
 from prometheus_flask_exporter import PrometheusMetrics
+import json
+from pythonjsonlogger import jsonlogger
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+# Replaced the basicConfig with this:
+handler = logging.StreamHandler()
+handler.setFormatter(jsonlogger.JsonFormatter('%(asctime)s %(name)s %(levelname)s %(message)s'))
+logging.basicConfig(level=logging.INFO, handlers=[handler])
+
+#logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+#logger = logging.getLogger(__name__)
 
 cache = Cache()
 
