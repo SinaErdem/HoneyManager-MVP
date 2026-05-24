@@ -1,52 +1,48 @@
 import os
 import logging
 from flask import Flask, request, jsonify
+from flask_caching import Cache
 from models import db, Alert
 
-# Setup basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+cache = Cache()
+
 def create_app():
     app = Flask(__name__)
-    
-    # 12-Factor: Load config from environment
-    database_url = os.environ.get('DATABASE_URL')
-    
-    if not database_url:
-        logger.warning("DATABASE_URL environment variable is not set!")
-        # Fallback to in-memory sqlite if no config provided (useful for quick local test without DB)
-        database_url = "sqlite:///:memory:"
+
+    database_url = os.environ.get('DATABASE_URL', 'sqlite:///:memory:')
+    redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
 
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['CACHE_TYPE'] = 'RedisCache'
+    app.config['CACHE_REDIS_URL'] = redis_url
+    app.config['CACHE_DEFAULT_TIMEOUT'] = 60
 
     db.init_app(app)
+    cache.init_app(app)
 
-    # Healthcheck endpoint (Important for AWS ECS / App Runner)
     @app.route('/api/health', methods=['GET'])
     def health_check():
         try:
-            # Check DB connection
             db.session.execute(db.text('SELECT 1'))
             return jsonify({'status': 'healthy', 'database': 'connected'}), 200
         except Exception as e:
             logger.error(f"Health check failed: {e}")
-            return jsonify({'status': 'unhealthy', 'database': 'disconnected', 'error': str(e)}), 503
+            return jsonify({'status': 'unhealthy', 'error': str(e)}), 503
 
-    # Log ingestion endpoint
     @app.route('/api/logs', methods=['POST'])
     def receive_log():
         data = request.get_json()
-        
         if not data:
-            return jsonify({'success': False, 'error': 'No JSON payload provided'}), 400
+            return jsonify({'success': False, 'error': 'No JSON payload'}), 400
 
-        # Basic validation
         required_fields = ['severity', 'honeypot_name', 'source_ip', 'event_type']
         for field in required_fields:
             if field not in data:
-                return jsonify({'success': False, 'error': f'Missing required field: {field}'}), 400
+                return jsonify({'success': False, 'error': f'Missing field: {field}'}), 400
 
         try:
             new_alert = Alert(
@@ -58,25 +54,23 @@ def create_app():
                 description=data.get('description'),
                 raw_data=data.get('raw_data')
             )
-            
             db.session.add(new_alert)
             db.session.commit()
-            
-            logger.info(f"Received new log from {data['source_ip']} - {data['event_type']}")
+            cache.delete('recent_logs')  # invalidate cache on new log
+            logger.info(f"New log from {data['source_ip']} - {data['event_type']}")
             return jsonify({'success': True, 'alert_id': new_alert.id}), 201
-
         except Exception as e:
             db.session.rollback()
-            logger.error(f"Failed to process log: {e}")
+            logger.error(f"Failed to save log: {e}")
             return jsonify({'success': False, 'error': 'Database error'}), 500
-            
-    # Simple GET endpoint to verify logs are saved
+
     @app.route('/api/logs', methods=['GET'])
+    @cache.cached(timeout=60, key_prefix='recent_logs')  # cache this for 60 seconds
     def get_logs():
         try:
             limit = request.args.get('limit', 10, type=int)
             alerts = Alert.query.order_by(Alert.timestamp.desc()).limit(limit).all()
-            return jsonify({'success': True, 'logs': [alert.to_dict() for alert in alerts]}), 200
+            return jsonify({'success': True, 'logs': [a.to_dict() for a in alerts]}), 200
         except Exception as e:
             return jsonify({'success': False, 'error': 'Database error'}), 500
 
