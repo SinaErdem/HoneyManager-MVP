@@ -7,7 +7,7 @@ from prometheus_flask_exporter import PrometheusMetrics
 import json
 from pythonjsonlogger import jsonlogger
 
-# Replaced the basicConfig with this:
+# Replaced
 handler = logging.StreamHandler()
 handler.setFormatter(jsonlogger.JsonFormatter('%(asctime)s %(name)s %(levelname)s %(message)s'))
 logging.basicConfig(level=logging.INFO, handlers=[handler])
