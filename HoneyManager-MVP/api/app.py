@@ -3,6 +3,7 @@ import logging
 from flask import Flask, request, jsonify
 from flask_caching import Cache
 from models import db, Alert
+from prometheus_flask_exporter import PrometheusMetrics
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -23,6 +24,8 @@ def create_app():
 
     db.init_app(app)
     cache.init_app(app)
+    metrics = PrometheusMetrics(app)
+    metrics.info('honeymanager_info', 'HoneyManager API', version='1.0.0')
 
     @app.route('/api/health', methods=['GET'])
     def health_check():
