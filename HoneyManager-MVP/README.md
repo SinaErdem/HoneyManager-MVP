@@ -3,7 +3,7 @@
 **Course:** CENG433 - Cloud Computing  
 **Team Members:** Sina Erdem Özdemir - 21050151019, Bilge Oğuz - 21050151023    
 **Demo Video:** [Insert Unlisted YouTube Link Here]  
-**GitHub Repository:** https://github.com/SinaErdem/HoneyManager-MVP/edit/main/HoneyManager-MVP/README.md
+**GitHub Repository:** https://github.com/SinaErdem/HoneyManager-MVP/tree/main/HoneyManager-MVP
 
 This project is a simplified, cloud-native prototype (MVP) of the distributed honeypot management system, HoneyManager, developed for a Cloud Computing course assignment. It is designed in strict adherence to the **12-Factor App** principles.
 
