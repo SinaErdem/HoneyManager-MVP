@@ -1,7 +1,7 @@
 # HoneyManager MVP (Minimum Viable Product)
 
 **Course:** CENG433 - Cloud Computing  
-**Team Members:** Sina Erdem Özdemir - 21050151019, Bilge Oğuz - 21050151023 
+**Team Members:** Sina Erdem Özdemir - 21050151019, Bilge Oğuz - 21050151023    
 **Demo Video:** [Insert Unlisted YouTube Link Here]  
 **GitHub Repository:** https://github.com/SinaErdem/HoneyManager-MVP/edit/main/HoneyManager-MVP/README.md
 
